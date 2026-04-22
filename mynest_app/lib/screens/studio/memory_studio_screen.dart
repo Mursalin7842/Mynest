@@ -1,6 +1,10 @@
 import 'dart:typed_data';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../../config/theme.dart';
 import '../../models/models.dart';
 import '../../services/auth_service.dart';
@@ -106,11 +110,22 @@ class _MemoryStudioScreenState extends State<MemoryStudioScreen> {
         photoUrl = StorageService().getFileUrl(fileId);
       }
 
+      String? audioUrl;
+      if (_mockAudioPath != null) {
+        final bytes = await File(_mockAudioPath!).readAsBytes();
+        final fileId = await StorageService().uploadFile(
+          fileName: 'audio_${DateTime.now().millisecondsSinceEpoch}.m4a',
+          fileBytes: bytes,
+        );
+        audioUrl = StorageService().getFileUrl(fileId);
+      }
+
       await DatabaseService().addMemory(Memory(
         id: '', userId: user.$id,
         title: _titleCtrl.text.trim(),
         story: _storyCtrl.text.trim().isNotEmpty ? _storyCtrl.text.trim() : null,
         photoUrl: photoUrl,
+        audioUrl: audioUrl,
         taggedPersonId: _selectedMemberId,
         taggedPersonName: _selectedMemberName,
         eventDate: _dateCtrl.text.isNotEmpty ? _dateCtrl.text : null,
@@ -385,65 +400,90 @@ class _MockAudioRecorderState extends State<_MockAudioRecorder> {
   bool _isPlaying = false;
   int _seconds = 0;
   int _playPosition = 0;
+  
+  final _record = AudioRecorder();
+  final _player = AudioPlayer();
+  String? _audioPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _player.onPositionChanged.listen((p) => setState(() => _playPosition = p.inSeconds));
+    _player.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
+    });
+  }
 
   void _toggleRecord() async {
     if (_isRecording) {
       // Stop recording
+      _audioPath = await _record.stop();
       setState(() {
         _isRecording = false;
         _isRecorded = true;
       });
     } else {
       // Start recording
-      setState(() {
-        _isRecording = true;
-        _isRecorded = false;
-        _seconds = 0;
-      });
-      while (_isRecording && mounted) {
-        await Future.delayed(const Duration(seconds: 1));
-        if (mounted && _isRecording) setState(() => _seconds++);
+      if (await _record.hasPermission()) {
+        final dir = await getApplicationDocumentsDirectory();
+        final path = '${dir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
+        await _record.start(const RecordConfig(), path: path);
+        
+        setState(() {
+          _isRecording = true;
+          _isRecorded = false;
+          _seconds = 0;
+        });
+        
+        while (_isRecording && mounted) {
+          await Future.delayed(const Duration(seconds: 1));
+          if (mounted && _isRecording) setState(() => _seconds++);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Microphone permission required!'), backgroundColor: Colors.red),
+          );
+        }
       }
     }
   }
 
   void _togglePlay() async {
     if (_isPlaying) {
-      setState(() => _isPlaying = false);
+      await _player.pause();
     } else {
-      setState(() {
-        _isPlaying = true;
-        if (_playPosition >= _seconds) _playPosition = 0;
-      });
-      while (_isPlaying && mounted && _playPosition < _seconds) {
-        await Future.delayed(const Duration(seconds: 1));
-        if (mounted && _isPlaying) {
-          setState(() {
-            _playPosition++;
-            if (_playPosition >= _seconds) _isPlaying = false;
-          });
-        }
+      if (_audioPath != null) {
+        await _player.play(DeviceFileSource(_audioPath!));
       }
     }
   }
 
-  void _retake() {
+  void _retake() async {
+    await _player.stop();
     setState(() {
       _isRecorded = false;
       _isPlaying = false;
       _seconds = 0;
       _playPosition = 0;
+      _audioPath = null;
     });
   }
 
   void _save() {
-    widget.onSave('mock_audio_file_${DateTime.now().millisecondsSinceEpoch}.mp3');
+    if (_audioPath != null) {
+      widget.onSave(_audioPath!);
+    } else {
+      widget.onCancel();
+    }
   }
 
   @override
   void dispose() {
     _isRecording = false;
     _isPlaying = false;
+    _record.dispose();
+    _player.dispose();
     super.dispose();
   }
 
