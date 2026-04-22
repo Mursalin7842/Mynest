@@ -103,6 +103,9 @@ class Memory {
   final String? taggedPersonName;
   final String? contributorName;
   final String? contributorRelation;
+  final String? contributorEmail;
+  final String? contributorPhone;
+  final String? contributorPhotoUrl;
   final String? eventDate;
   final String? location;
   final bool isApproved;
@@ -121,6 +124,9 @@ class Memory {
     this.taggedPersonName,
     this.contributorName,
     this.contributorRelation,
+    this.contributorEmail,
+    this.contributorPhone,
+    this.contributorPhotoUrl,
     this.eventDate,
     this.location,
     this.isApproved = true,
@@ -141,6 +147,9 @@ class Memory {
       taggedPersonName: map['taggedPersonName'],
       contributorName: map['contributorName'],
       contributorRelation: map['contributorRelation'],
+      contributorEmail: map['contributorEmail'],
+      contributorPhone: map['contributorPhone'],
+      contributorPhotoUrl: map['contributorPhotoUrl'],
       eventDate: map['eventDate'],
       location: map['location'],
       isApproved: map['isApproved'] ?? true, // null treated as approved
@@ -161,6 +170,9 @@ class Memory {
       'taggedPersonName': taggedPersonName,
       'contributorName': contributorName,
       'contributorRelation': contributorRelation,
+      'contributorEmail': contributorEmail,
+      'contributorPhone': contributorPhone,
+      'contributorPhotoUrl': contributorPhotoUrl,
       'eventDate': eventDate,
       'location': location,
       'isApproved': isApproved,

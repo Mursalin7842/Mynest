@@ -235,10 +235,12 @@ class _MemoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = memory.photoUrl != null && memory.photoUrl!.isNotEmpty;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: NestTheme.cardRadius,
@@ -247,119 +249,238 @@ class _MemoryCard extends StatelessWidget {
               ? Border.all(color: NestTheme.amber.withOpacity(0.4), width: 1.5)
               : null,
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Card Content
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // ── Photo Thumbnail ──
+            if (hasPhoto)
+              Stack(
                 children: [
-                  // Icon
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: memory.photoUrl != null
-                          ? null
-                          : NestTheme.cardGradient,
-                      borderRadius: BorderRadius.circular(14),
-                      color: memory.photoUrl != null
-                          ? NestTheme.parchment
-                          : null,
-                    ),
-                    child: Icon(
-                      memory.photoUrl != null
-                          ? Icons.photo_rounded
-                          : memory.audioUrl != null
-                              ? Icons.mic_rounded
-                              : Icons.article_rounded,
-                      color: NestTheme.deepAmber,
-                      size: 24,
+                  SizedBox(
+                    width: double.infinity,
+                    height: 180,
+                    child: Image.network(
+                      memory.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: NestTheme.parchment,
+                        child: const Center(
+                          child: Icon(Icons.image_not_supported_outlined,
+                              color: NestTheme.mist, size: 40),
+                        ),
+                      ),
+                      loadingBuilder: (_, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: NestTheme.parchment,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: NestTheme.deepAmber,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            if (!memory.isApproved)
-                              Container(
-                                margin: const EdgeInsets.only(right: 8),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: NestTheme.amber.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text(
-                                  'PENDING',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    color: NestTheme.deepAmber,
-                                  ),
-                                ),
+                  // Gradient overlay at bottom
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.45),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Title on image
+                  Positioned(
+                    bottom: 10,
+                    left: 14,
+                    right: 14,
+                    child: Text(
+                      memory.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        shadows: [Shadow(blurRadius: 6, color: Colors.black54)],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Pending badge
+                  if (!memory.isApproved)
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: NestTheme.amber.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'PENDING',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Audio indicator
+                  if (memory.audioUrl != null)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.mic_rounded,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                ],
+              )
+            else
+              // ── No Photo — Icon + Title Row ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: NestTheme.cardGradient,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        memory.audioUrl != null
+                            ? Icons.mic_rounded
+                            : Icons.article_rounded,
+                        color: NestTheme.deepAmber,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (!memory.isApproved)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: NestTheme.amber.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
                               ),
-                            Expanded(
-                              child: Text(
-                                memory.title,
-                                style:
-                                    Theme.of(context).textTheme.titleMedium,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: const Text(
+                                'PENDING',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: NestTheme.deepAmber,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        if (memory.story != null && memory.story!.isNotEmpty)
                           Text(
-                            memory.story!,
-                            style: Theme.of(context).textTheme.bodySmall,
-                            maxLines: 2,
+                            memory.title,
+                            style: Theme.of(context).textTheme.titleMedium,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            if (memory.contributorName != null) ...[
-                              Icon(Icons.person_outline,
-                                  size: 14, color: NestTheme.mist),
-                              const SizedBox(width: 4),
-                              Text(
-                                memory.contributorName!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall!
-                                    .copyWith(fontSize: 11),
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                            if (memory.eventDate != null) ...[
-                              Icon(Icons.calendar_today_outlined,
-                                  size: 14, color: NestTheme.mist),
-                              const SizedBox(width: 4),
-                              Text(
-                                memory.eventDate!,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall!
-                                    .copyWith(fontSize: 11),
-                              ),
-                            ],
-                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // ── Story Preview ──
+            Padding(
+              padding: EdgeInsets.fromLTRB(18, hasPhoto ? 14 : 8, 18, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!hasPhoto && memory.title.isNotEmpty)
+                    const SizedBox(height: 4),
+                  if (memory.story != null && memory.story!.isNotEmpty)
+                    Text(
+                      memory.story!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      if (memory.contributorName != null) ...[
+                        Icon(Icons.person_outline,
+                            size: 14, color: NestTheme.mist),
+                        const SizedBox(width: 4),
+                        Text(
+                          memory.contributorName!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall!
+                              .copyWith(fontSize: 11),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      if (memory.contributorRelation != null) ...[
+                        Icon(Icons.family_restroom_rounded,
+                            size: 14, color: NestTheme.mist),
+                        const SizedBox(width: 4),
+                        Text(
+                          memory.contributorRelation!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall!
+                              .copyWith(fontSize: 11, fontStyle: FontStyle.italic),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      if (memory.eventDate != null) ...[
+                        Icon(Icons.calendar_today_outlined,
+                            size: 14, color: NestTheme.mist),
+                        const SizedBox(width: 4),
+                        Text(
+                          memory.eventDate!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall!
+                              .copyWith(fontSize: 11),
                         ),
                       ],
-                    ),
+                    ],
                   ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
-            // Approve Button
+
+            // ── Approve / Reject Bar ──
             if (onApprove != null)
               Container(
                 decoration: BoxDecoration(
@@ -401,3 +522,4 @@ class _MemoryCard extends StatelessWidget {
     );
   }
 }
+
