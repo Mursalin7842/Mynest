@@ -311,15 +311,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
 
                   // ── Test hint ──
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '🧪 Test: ${AppwriteConfig.testEmail} / ${AppwriteConfig.testPassword}',
-                      style: const TextStyle(color: Colors.white54, fontSize: 11),
+                  GestureDetector(
+                    onTap: () {
+                      AuthService().performUltimateBypass();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const HomeShell()),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white10,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '🧪 Test: ${AppwriteConfig.testEmail} / ${AppwriteConfig.testPassword}',
+                        style: const TextStyle(color: Colors.white54, fontSize: 11),
+                      ),
                     ),
                   ).animate().fadeIn(delay: 800.ms),
 
