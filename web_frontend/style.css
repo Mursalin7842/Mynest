@@ -171,3 +171,64 @@ button:disabled {
   text-align: center;
   font-weight: 500;
 }
+
+/* Audio Recorder Styles */
+.audio-recorder {
+  margin-bottom: 15px;
+}
+
+.record-btn {
+  background-color: #f1f3f5;
+  color: var(--charcoal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.record-btn:hover {
+  background-color: #e9ecef;
+}
+
+.record-btn.recording {
+  background-color: #ffe3e3;
+  color: #c92a2a;
+  animation: pulse 1.5s infinite;
+}
+
+.record-icon {
+  font-size: 1.2rem;
+}
+
+.audio-playback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.audio-playback audio {
+  flex-grow: 1;
+  height: 40px;
+}
+
+.delete-audio-btn {
+  width: auto;
+  padding: 10px;
+  background-color: #ffc9c9;
+  color: #c92a2a;
+}
+
+.delete-audio-btn:hover {
+  background-color: #ffa8a8;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(201, 42, 42, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(201, 42, 42, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 42, 42, 0); }
+}

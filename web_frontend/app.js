@@ -5,9 +5,11 @@ client
     .setProject('687e9e6200375f703df2');
 
 const databases = new Appwrite.Databases(client);
+const storage = new Appwrite.Storage(client);
 const DATABASE_ID = '69e916610024758bfa45';
 const LINKS_COLLECTION = 'links';
 const MEMORIES_COLLECTION = 'memories';
+const BUCKET_ID = 'mynest_files';
 
 // Get the link ID from the URL (e.g. index.html?link=12345)
 const urlParams = new URLSearchParams(window.location.search);
@@ -52,19 +54,89 @@ function showError() {
     document.getElementById('error-state').classList.remove('hidden');
 }
 
+// Audio Recording Logic
+let mediaRecorder;
+let audioChunks = [];
+let audioBlob = null;
+
+const recordBtn = document.getElementById('recordBtn');
+const recordText = document.getElementById('recordText');
+const audioPlaybackContainer = document.getElementById('audioPlaybackContainer');
+const audioPlayback = document.getElementById('audioPlayback');
+const deleteAudioBtn = document.getElementById('deleteAudioBtn');
+
+recordBtn.addEventListener('click', async () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        recordBtn.classList.remove('recording');
+        recordText.textContent = 'Start Recording';
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audioPlayback.src = audioUrl;
+            audioPlaybackContainer.classList.remove('hidden');
+            recordBtn.style.display = 'none';
+        };
+
+        mediaRecorder.start();
+        recordBtn.classList.add('recording');
+        recordText.textContent = 'Stop Recording';
+    } catch (err) {
+        console.error("Microphone access denied", err);
+        alert("Please allow microphone access to record audio.");
+    }
+});
+
+deleteAudioBtn.addEventListener('click', () => {
+    audioBlob = null;
+    audioPlayback.src = '';
+    audioPlaybackContainer.classList.add('hidden');
+    recordBtn.style.display = 'flex';
+});
+
 // Handle Form Submission
 document.getElementById('memory-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const story = document.getElementById('story').value.trim();
+    if (!story && !audioBlob) {
+        alert("Please either write a story or record audio!");
+        return;
+    }
+
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
 
-    const name = document.getElementById('contributorName').value;
-    const title = document.getElementById('title').value;
-    const story = document.getElementById('story').value;
+    const name = document.getElementById('contributorName').value.trim();
+    const relation = document.getElementById('contributorRelation').value.trim();
+    const title = document.getElementById('title').value.trim();
 
     try {
+        let finalAudioUrl = null;
+
+        // Upload audio if exists
+        if (audioBlob) {
+            submitBtn.textContent = 'Uploading Audio...';
+            const file = new File([audioBlob], `audio_${Date.now()}.webm`, { type: 'audio/webm' });
+            const uploadedFile = await storage.createFile(BUCKET_ID, Appwrite.ID.unique(), file);
+            finalAudioUrl = `https://cloud.appwrite.io/v1/storage/buckets/${BUCKET_ID}/files/${uploadedFile.$id}/view?project=687e9e6200375f703df2`;
+        }
+
+        submitBtn.textContent = 'Saving Memory...';
+
         await databases.createDocument(
             DATABASE_ID,
             MEMORIES_COLLECTION,
@@ -72,9 +144,11 @@ document.getElementById('memory-form').addEventListener('submit', async (e) => {
             {
                 userId: currentLink.userId, // Send to the person who shared the link
                 title: title,
-                story: story,
+                story: story || "Audio Memory",
                 contributorName: name,
+                contributorRelation: relation,
                 photoUrl: currentLink.type === 'photo_context' ? currentLink.photoUrl : null,
+                audioUrl: finalAudioUrl,
                 isApproved: false, // Goes to Pending tab!
                 status: 'raw',
                 visibility: 'public'

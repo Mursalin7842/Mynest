@@ -49,13 +49,30 @@
           </div>
           
           <div class="form-group">
+            <label for="contributorRelation">Relation to Family</label>
+            <input type="text" id="contributorRelation" required placeholder="e.g. Grandfather, Cousin">
+          </div>
+          
+          <div class="form-group">
             <label for="title">Give this memory a title</label>
             <input type="text" id="title" required placeholder="e.g. The Summer of '85">
           </div>
           
           <div class="form-group">
-            <label for="story">Write your story</label>
-            <textarea id="story" rows="6" required placeholder="I remember when..."></textarea>
+            <label for="story">Write your story or Record Audio</label>
+            
+            <div class="audio-recorder" id="audioRecorder">
+              <button type="button" id="recordBtn" class="record-btn">
+                <span class="record-icon">🎤</span>
+                <span id="recordText">Start Recording</span>
+              </button>
+              <div id="audioPlaybackContainer" class="audio-playback hidden">
+                <audio id="audioPlayback" controls></audio>
+                <button type="button" id="deleteAudioBtn" class="delete-audio-btn">🗑️</button>
+              </div>
+            </div>
+
+            <textarea id="story" rows="6" placeholder="I remember when... (optional if you recorded audio)"></textarea>
           </div>
 
           <button type="submit" id="submit-btn">Submit to Family Vault</button>
