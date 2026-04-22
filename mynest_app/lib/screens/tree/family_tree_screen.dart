@@ -231,6 +231,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
               ),
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'tree_fab',
         onPressed: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const AddMemberScreen()))
             .then((_) => _load()),

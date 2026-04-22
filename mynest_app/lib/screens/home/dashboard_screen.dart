@@ -276,6 +276,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'dashboard_fab',
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const MemoryStudioScreen()),

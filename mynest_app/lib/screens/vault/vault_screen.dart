@@ -214,6 +214,7 @@ class _VaultScreenState extends State<VaultScreen>
                     ),
             ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'vault_fab',
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const MemoryStudioScreen()),
