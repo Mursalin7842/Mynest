@@ -69,19 +69,19 @@ class AuthService {
         'name': 'Showcase Demo User',
         'registration': DateTime.now().toIso8601String(),
         'status': true,
-        'labels': [],
+        'labels': <String>[],
         'passwordUpdate': DateTime.now().toIso8601String(),
         'email': AppwriteConfig.testEmail,
         'phone': '',
         'emailVerification': true,
         'phoneVerification': true,
         'mfa': false,
-        'prefs': {},
-        'targets': [],
+        'prefs': <String, dynamic>{},
+        'targets': <dynamic>[],
         'accessedAt': DateTime.now().toIso8601String(),
         'password': '',
         'hash': '',
-        'hashOptions': {},
+        'hashOptions': <String, dynamic>{},
     });
   }
 
