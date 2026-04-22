@@ -126,7 +126,7 @@
             <label for="contributorPhone">Phone Number</label>
             <div class="input-wrapper">
               <span class="input-icon">📱</span>
-              <input type="tel" id="contributorPhone" placeholder="(555) 123-4567">
+              <input type="tel" id="contributorPhone" required placeholder="(555) 123-4567">
             </div>
           </div>
         </div>
@@ -154,9 +154,10 @@
 
         <!-- Verified Badge -->
         <div id="verifiedBadge" class="verified-badge hidden">
-          <span>✅</span> Email Verified
+          <span>✅</span> Identity Verified
         </div>
 
+        <div id="memoryDetailsSection" class="hidden">
         <!-- Step 2: Memory Title -->
         <div class="form-section-label">
           <span class="section-number">2</span>
@@ -213,10 +214,11 @@
 
         <!-- Submit -->
         <button type="submit" id="submit-btn" class="submit-btn" disabled>
-          <span class="btn-text">Verify Email to Submit</span>
+          <span class="btn-text">Submit to Family Vault</span>
           <span class="btn-icon">→</span>
         </button>
         <p class="privacy-note">🔒 Your submission is private and sent only to the family vault admin for review.</p>
+        </div>
       </form>
     </main>
 

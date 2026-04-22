@@ -192,10 +192,17 @@ verifyOtpBtn.addEventListener('click', async () => {
     try {
         await account.createSession(verificationUserId, code);
         isEmailVerified = true;
+        
+        // Lock the email input so they can't change it to a fake one
+        emailInput.readOnly = true;
+        emailInput.style.opacity = '0.7';
 
         // Hide verification, show badge
         verificationSection.classList.add('hidden');
         verifiedBadge.classList.remove('hidden');
+
+        // Unhide the rest of the form
+        document.getElementById('memoryDetailsSection').classList.remove('hidden');
 
         // Enable submit button
         submitBtn.disabled = false;
@@ -521,7 +528,9 @@ document.getElementById('memory-form').addEventListener('submit', async (e) => {
             });
         }
 
-        // Success
+        // 4. Success! Delete session to avoid lingering user auth state
+        try { await account.deleteSession('current'); } catch (err) { console.error('Session cleanup error', err); }
+
         document.getElementById('form-card').classList.add('hidden');
         document.getElementById('success-state').classList.remove('hidden');
         window.scrollTo({ top: 0, behavior: 'smooth' });
