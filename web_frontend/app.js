@@ -1,0 +1,96 @@
+// Initialize Appwrite
+const client = new Appwrite.Client();
+client
+    .setEndpoint('https://cloud.appwrite.io/v1')
+    .setProject('687e9e6200375f703df2');
+
+const databases = new Appwrite.Databases(client);
+const DATABASE_ID = '69e916610024758bfa45';
+const LINKS_COLLECTION = 'links';
+const MEMORIES_COLLECTION = 'memories';
+
+// Get the link ID from the URL (e.g. index.html?link=12345)
+const urlParams = new URLSearchParams(window.location.search);
+const linkId = urlParams.get('link');
+
+let currentLink = null;
+
+async function init() {
+    if (!linkId) {
+        showError();
+        return;
+    }
+
+    try {
+        // Fetch link details
+        currentLink = await databases.getDocument(DATABASE_ID, LINKS_COLLECTION, linkId);
+        
+        // If it's a photo context link, show the photo
+        if (currentLink.type === 'photo_context' && currentLink.photoUrl) {
+            document.getElementById('photo-context-section').classList.remove('hidden');
+            document.getElementById('shared-photo').src = currentLink.photoUrl;
+            
+            if (currentLink.description) {
+                document.getElementById('author-question').textContent = currentLink.description;
+            } else {
+                document.getElementById('author-question').textContent = "Do you know the story behind this photo?";
+            }
+        }
+
+        // Show main content
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('main-content').classList.remove('hidden');
+
+    } catch (e) {
+        console.error(e);
+        showError();
+    }
+}
+
+function showError() {
+    document.getElementById('loader').classList.add('hidden');
+    document.getElementById('error-state').classList.remove('hidden');
+}
+
+// Handle Form Submission
+document.getElementById('memory-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    const name = document.getElementById('contributorName').value;
+    const title = document.getElementById('title').value;
+    const story = document.getElementById('story').value;
+
+    try {
+        await databases.createDocument(
+            DATABASE_ID,
+            MEMORIES_COLLECTION,
+            Appwrite.ID.unique(),
+            {
+                userId: currentLink.userId, // Send to the person who shared the link
+                title: title,
+                story: story,
+                contributorName: name,
+                photoUrl: currentLink.type === 'photo_context' ? currentLink.photoUrl : null,
+                isApproved: false, // Goes to Pending tab!
+                status: 'raw',
+                visibility: 'public'
+            }
+        );
+
+        // Success
+        document.getElementById('memory-form').classList.add('hidden');
+        document.getElementById('success-msg').classList.remove('hidden');
+
+    } catch (e) {
+        console.error(e);
+        alert('Error submitting memory. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit to Family Vault';
+    }
+});
+
+init();

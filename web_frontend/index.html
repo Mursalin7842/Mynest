@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyNest Family Story</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
+</head>
+<body>
+
+  <div id="loader" class="loader-container">
+    <div class="spinner"></div>
+    <p>Loading the story...</p>
+  </div>
+
+  <div id="error-state" class="error-state hidden">
+    <h2>Link Not Found</h2>
+    <p>This memory link might be expired or invalid.</p>
+  </div>
+
+  <div id="main-content" class="main-content hidden">
+    <header>
+      <h1>MyNest</h1>
+      <p>Help preserve this family memory</p>
+    </header>
+
+    <!-- Photo Context Section -->
+    <section id="photo-context-section" class="photo-section hidden">
+      <div class="photo-container">
+        <img id="shared-photo" src="" alt="Family Memory">
+      </div>
+      <div class="question-container">
+        <h3 id="author-question"></h3>
+      </div>
+    </section>
+
+    <!-- Submission Form -->
+    <section class="form-section">
+      <div class="card">
+        <h2>Add Your Memory</h2>
+        <p>Your story will be sent for approval and added to the family book.</p>
+        
+        <form id="memory-form">
+          <div class="form-group">
+            <label for="contributorName">Your Name</label>
+            <input type="text" id="contributorName" required placeholder="e.g. Uncle John">
+          </div>
+          
+          <div class="form-group">
+            <label for="title">Give this memory a title</label>
+            <input type="text" id="title" required placeholder="e.g. The Summer of '85">
+          </div>
+          
+          <div class="form-group">
+            <label for="story">Write your story</label>
+            <textarea id="story" rows="6" required placeholder="I remember when..."></textarea>
+          </div>
+
+          <button type="submit" id="submit-btn">Submit to Family Vault</button>
+        </form>
+
+        <div id="success-msg" class="success-msg hidden">
+          ✅ Thank you! Your memory has been sent to the family vault for approval.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
