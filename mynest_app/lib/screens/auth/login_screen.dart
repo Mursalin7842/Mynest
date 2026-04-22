@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Invalid email or password. Please try again.'),
+            content: Text('Verification failed.\n\nDetails: ${e.toString()}'),
             backgroundColor: Colors.red.shade400,
           ),
         );
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Invalid code. Please try again.'),
+            content: Text('Invalid code.\n\nDetails: ${e.toString()}'),
             backgroundColor: Colors.red.shade400,
           ),
         );

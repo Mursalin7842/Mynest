@@ -58,7 +58,7 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        String msg = 'Account creation failed. Please try again.';
+        String msg = 'Account creation failed.\n\nDetails: ${e.toString()}';
         if (e.toString().contains('already exists')) {
           msg = 'An account with this email already exists.';
         }
@@ -98,7 +98,7 @@ class _SignupScreenState extends State<SignupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Invalid code. Please try again.'),
+            content: Text('Invalid code.\n\nDetails: ${e.toString()}'),
             backgroundColor: Colors.red.shade400,
           ),
         );

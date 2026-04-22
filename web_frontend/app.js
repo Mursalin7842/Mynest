@@ -1,7 +1,7 @@
 // Initialize Appwrite
 const client = new Appwrite.Client();
 client
-    .setEndpoint('https://cloud.appwrite.io/v1')
+    .setEndpoint('https://nyc.cloud.appwrite.io/v1')
     .setProject('687e9e6200375f703df2');
 
 const databases = new Appwrite.Databases(client);

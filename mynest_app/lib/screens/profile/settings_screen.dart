@@ -72,7 +72,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           await DatabaseService().updateUserProfile(existing.id, {'profilePhotoUrl': fileId});
         } else {
           await DatabaseService().createUserProfile(UserProfile(
-            id: '', userId: user.$id, fullName: _name, profilePhotoUrl: fileId,
+            id: '', userId: user.$id, fullName: _name, email: _email, profilePhotoUrl: fileId,
           ));
         }
         setState(() {
