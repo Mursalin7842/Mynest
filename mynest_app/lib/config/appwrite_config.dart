@@ -31,7 +31,7 @@ class AppwriteConfig {
 
   // ── Test Account (bypasses email verification) ──
   static const String testEmail = 'test@gmail.com';
-  static const String testPassword = 'test';
+  static const String testPassword = 'testtest';
 
   // ── App Version ──
   static const String appVersion = 'V1.2.0';

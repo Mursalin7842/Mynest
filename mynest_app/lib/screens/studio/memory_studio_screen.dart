@@ -307,6 +307,7 @@ class _MemoryStudioScreenState extends State<MemoryStudioScreen> {
               ),
             )),
           ]),
+          ],
           const SizedBox(height: 20),
 
           // Story
