@@ -61,10 +61,20 @@ class AuthService {
   }
 
   /// Custom 2FA: Verify password and send OTP
-  Future<String> verifyPasswordAndSendOtp({
+  Future<String?> verifyPasswordAndSendOtp({
     required String email,
     required String password,
   }) async {
+    if (email.toLowerCase() == AppwriteConfig.testEmail && password == AppwriteConfig.testPassword) {
+      // Test account bypass: Create session and return null to indicate bypass
+      await _account.createEmailPasswordSession(
+        email: email,
+        password: password,
+      );
+      _currentUser = await _account.get();
+      return null;
+    }
+
     // 1. Verify password by creating a session
     final session = await _account.createEmailPasswordSession(
       email: email,

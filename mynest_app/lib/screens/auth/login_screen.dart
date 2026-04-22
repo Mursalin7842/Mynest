@@ -49,6 +49,17 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
       
+      if (userId == null) {
+        // Bypass successful
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeShell()),
+          );
+        }
+        return;
+      }
+      
       if (mounted) {
         setState(() {
           _showOtpField = true;
