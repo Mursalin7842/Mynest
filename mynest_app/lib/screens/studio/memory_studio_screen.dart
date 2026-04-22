@@ -31,6 +31,7 @@ class _MemoryStudioScreenState extends State<MemoryStudioScreen> {
   String _visibility = 'public'; // public, private, custom
   Uint8List? _photoBytes;
   String? _photoFileName;
+  bool _isRecordingMode = false;
   String? _mockAudioPath;
 
   @override
@@ -227,27 +228,38 @@ class _MemoryStudioScreenState extends State<MemoryStudioScreen> {
           const SizedBox(height: 24),
 
           // Record / Type
-          Row(children: [
-            Expanded(child: GestureDetector(
-              onTap: () async {
-                final audioPath = await showModalBottomSheet<String>(
-                  context: context,
-                  backgroundColor: NestTheme.cream,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-                  builder: (ctx) => const _MockAudioRecorder(),
-                );
-                if (audioPath != null) {
-                  setState(() => _mockAudioPath = audioPath);
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                decoration: BoxDecoration(
-                  color: _mockAudioPath != null ? NestTheme.sage.withAlpha(26) : Colors.white, 
-                  borderRadius: NestTheme.cardRadius,
-                  boxShadow: NestTheme.softShadow,
-                  border: _mockAudioPath != null ? Border.all(color: NestTheme.sage, width: 2) : null,
-                ),
+          if (_isRecordingMode) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: NestTheme.cardRadius,
+                boxShadow: NestTheme.softShadow,
+                border: Border.all(color: NestTheme.mist.withAlpha(128)),
+              ),
+              child: _MockAudioRecorder(
+                onSave: (path) {
+                  setState(() {
+                    _mockAudioPath = path;
+                    _isRecordingMode = false;
+                  });
+                },
+                onCancel: () {
+                  setState(() => _isRecordingMode = false);
+                },
+              ),
+            ),
+          ] else ...[
+            Row(children: [
+              Expanded(child: GestureDetector(
+                onTap: () => setState(() => _isRecordingMode = true),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: BoxDecoration(
+                    color: _mockAudioPath != null ? NestTheme.sage.withAlpha(26) : Colors.white, 
+                    borderRadius: NestTheme.cardRadius,
+                    boxShadow: NestTheme.softShadow,
+                    border: _mockAudioPath != null ? Border.all(color: NestTheme.sage, width: 2) : null,
+                  ),
                 child: Column(children: [
                   Container(padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -358,7 +370,10 @@ class _VisibilityChip extends StatelessWidget {
 }
 
 class _MockAudioRecorder extends StatefulWidget {
-  const _MockAudioRecorder();
+  final Function(String) onSave;
+  final VoidCallback onCancel;
+
+  const _MockAudioRecorder({required this.onSave, required this.onCancel});
 
   @override
   State<_MockAudioRecorder> createState() => _MockAudioRecorderState();
@@ -422,7 +437,7 @@ class _MockAudioRecorderState extends State<_MockAudioRecorder> {
   }
 
   void _save() {
-    Navigator.pop(context, 'mock_audio_file_${DateTime.now().millisecondsSinceEpoch}.mp3');
+    widget.onSave('mock_audio_file_${DateTime.now().millisecondsSinceEpoch}.mp3');
   }
 
   @override
@@ -442,7 +457,17 @@ class _MockAudioRecorderState extends State<_MockAudioRecorder> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Record Memory', style: Theme.of(context).textTheme.headlineMedium),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Record Memory', style: Theme.of(context).textTheme.headlineMedium),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: widget.onCancel,
+                  color: NestTheme.mist,
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             Text(_isRecorded ? 'Review your recording.' : 'Share your story using your voice.', style: const TextStyle(color: NestTheme.mist)),
             const SizedBox(height: 40),

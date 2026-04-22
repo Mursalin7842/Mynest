@@ -4,6 +4,7 @@ import '../../config/theme.dart';
 import '../../models/models.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
+import '../../services/storage_service.dart';
 import 'add_member_screen.dart';
 import 'member_profile_screen.dart';
 
@@ -43,8 +44,35 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       if (user != null) {
         final all = await DatabaseService().getFamilyMembers(user.$id);
         final memories = await DatabaseService().getMemories(user.$id);
-        
         bool needsRefresh = false;
+
+        // --- 1. Sync User Profile (Self) ---
+        final profile = await DatabaseService().getUserProfile(user.$id);
+        String? selfPhotoUrl;
+        if (profile != null && profile.profilePhotoUrl != null) {
+           selfPhotoUrl = StorageService().getProfilePhotoUrl(profile.profilePhotoUrl!);
+        }
+        
+        final selfExists = all.any((m) => m.relation?.toLowerCase() == 'self' || m.relation?.toLowerCase() == 'me');
+        if (!selfExists) {
+           await DatabaseService().addFamilyMember(FamilyMember(
+             id: '',
+             userId: user.$id,
+             fullName: profile?.fullName ?? user.name,
+             relation: 'Self',
+             photoUrl: selfPhotoUrl,
+             isApproved: true,
+           ));
+           needsRefresh = true;
+        } else if (selfPhotoUrl != null) {
+           final selfNode = all.firstWhere((m) => m.relation?.toLowerCase() == 'self' || m.relation?.toLowerCase() == 'me');
+           if (selfNode.photoUrl != selfPhotoUrl) {
+             await DatabaseService().updateFamilyMember(selfNode.id, {'photoUrl': selfPhotoUrl});
+             needsRefresh = true;
+           }
+        }
+
+        // --- 2. Sync Contributors ---
         for (var mem in memories) {
           if (mem.contributorName != null && mem.contributorName!.isNotEmpty) {
             final exists = all.any((m) => m.fullName.toLowerCase() == mem.contributorName!.toLowerCase());
