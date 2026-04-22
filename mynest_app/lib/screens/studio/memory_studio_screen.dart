@@ -366,70 +366,177 @@ class _MockAudioRecorder extends StatefulWidget {
 
 class _MockAudioRecorderState extends State<_MockAudioRecorder> {
   bool _isRecording = false;
+  bool _isRecorded = false;
+  bool _isPlaying = false;
   int _seconds = 0;
+  int _playPosition = 0;
 
   void _toggleRecord() async {
     if (_isRecording) {
-      // Stop
-      Navigator.pop(context, 'mock_audio_file_${DateTime.now().millisecondsSinceEpoch}.mp3');
+      // Stop recording
+      setState(() {
+        _isRecording = false;
+        _isRecorded = true;
+      });
     } else {
-      // Start
-      setState(() => _isRecording = true);
+      // Start recording
+      setState(() {
+        _isRecording = true;
+        _isRecorded = false;
+        _seconds = 0;
+      });
       while (_isRecording && mounted) {
         await Future.delayed(const Duration(seconds: 1));
-        if (mounted) setState(() => _seconds++);
+        if (mounted && _isRecording) setState(() => _seconds++);
       }
     }
+  }
+
+  void _togglePlay() async {
+    if (_isPlaying) {
+      setState(() => _isPlaying = false);
+    } else {
+      setState(() {
+        _isPlaying = true;
+        if (_playPosition >= _seconds) _playPosition = 0;
+      });
+      while (_isPlaying && mounted && _playPosition < _seconds) {
+        await Future.delayed(const Duration(seconds: 1));
+        if (mounted && _isPlaying) {
+          setState(() {
+            _playPosition++;
+            if (_playPosition >= _seconds) _isPlaying = false;
+          });
+        }
+      }
+    }
+  }
+
+  void _retake() {
+    setState(() {
+      _isRecorded = false;
+      _isPlaying = false;
+      _seconds = 0;
+      _playPosition = 0;
+    });
+  }
+
+  void _save() {
+    Navigator.pop(context, 'mock_audio_file_${DateTime.now().millisecondsSinceEpoch}.mp3');
   }
 
   @override
   void dispose() {
     _isRecording = false;
+    _isPlaying = false;
     super.dispose();
   }
 
+  String _format(int s) => '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      height: 350,
-      child: Column(
-        children: [
-          Text('Record Memory', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          const Text('Share your story using your voice.', style: TextStyle(color: NestTheme.mist)),
-          const SizedBox(height: 40),
-          
-          Text(
-            '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}',
-            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: NestTheme.darkBrown),
-          ),
-          const SizedBox(height: 40),
+    return SingleChildScrollView(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Record Memory', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 8),
+            Text(_isRecorded ? 'Review your recording.' : 'Share your story using your voice.', style: const TextStyle(color: NestTheme.mist)),
+            const SizedBox(height: 40),
+            
+            if (!_isRecorded) ...[
+              Text(
+                _format(_seconds),
+                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: NestTheme.darkBrown),
+              ),
+              const SizedBox(height: 40),
 
-          GestureDetector(
-            onTap: _toggleRecord,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: _isRecording ? NestTheme.dustyRose : NestTheme.deepAmber,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  if (_isRecording)
-                    BoxShadow(color: NestTheme.dustyRose.withAlpha(128), blurRadius: 20, spreadRadius: 10),
+              GestureDetector(
+                onTap: _toggleRecord,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: _isRecording ? NestTheme.dustyRose : NestTheme.deepAmber,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      if (_isRecording)
+                        BoxShadow(color: NestTheme.dustyRose.withAlpha(128), blurRadius: 20, spreadRadius: 10),
+                    ],
+                  ),
+                  child: Icon(
+                    _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                    color: Colors.white,
+                    size: 40,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(_isRecording ? 'Tap to stop recording' : 'Tap to start recording',
+                  style: TextStyle(color: _isRecording ? NestTheme.dustyRose : NestTheme.charcoal)),
+            ] else ...[
+              // Playback UI
+              Text(
+                '${_format(_playPosition)} / ${_format(_seconds)}',
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: NestTheme.darkBrown),
+              ),
+              const SizedBox(height: 16),
+              SliderTheme(
+                data: SliderThemeData(
+                  trackHeight: 4,
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                  activeTrackColor: NestTheme.amber,
+                  inactiveTrackColor: NestTheme.parchment,
+                  thumbColor: NestTheme.deepAmber,
+                ),
+                child: Slider(
+                  min: 0,
+                  max: _seconds > 0 ? _seconds.toDouble() : 1,
+                  value: _playPosition.toDouble().clamp(0, _seconds > 0 ? _seconds.toDouble() : 1),
+                  onChanged: (v) {
+                    setState(() {
+                      _playPosition = v.toInt();
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _retake,
+                    icon: const Icon(Icons.replay_rounded),
+                    label: const Text('Retake'),
+                  ),
+                  const SizedBox(width: 16),
+                  Container(
+                    decoration: const BoxDecoration(shape: BoxShape.circle, gradient: NestTheme.buttonGradient),
+                    child: IconButton(
+                      icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
+                      iconSize: 32,
+                      onPressed: _togglePlay,
+                    ),
+                  ),
                 ],
               ),
-              child: Icon(
-                _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                color: Colors.white,
-                size: 40,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(_isRecording ? 'Tap to stop recording' : 'Tap to start recording',
-              style: TextStyle(color: _isRecording ? NestTheme.dustyRose : NestTheme.charcoal)),
-        ],
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(backgroundColor: NestTheme.sage),
+                  child: const Text('Save to Vault'),
+                ),
+              )
+            ],
+            const SizedBox(height: 16), // Bottom padding for safety
+          ],
+        ),
       ),
     );
   }
