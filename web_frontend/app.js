@@ -11,9 +11,17 @@ const LINKS_COLLECTION = 'links';
 const MEMORIES_COLLECTION = 'memories';
 const BUCKET_ID = 'mynest_files';
 
-// Get the link ID from the URL (e.g. index.html?link=12345)
+// Get the link ID from the URL query (?link=12345) or path (/contribute/12345)
 const urlParams = new URLSearchParams(window.location.search);
-const linkId = urlParams.get('link');
+let linkId = urlParams.get('link');
+
+if (!linkId) {
+    const pathSegments = window.location.pathname.split('/').filter(s => s.length > 0);
+    const lastSegment = pathSegments.pop();
+    if (lastSegment && !lastSegment.includes('.html') && lastSegment !== 'contribute' && lastSegment !== 'photo-story') {
+        linkId = lastSegment;
+    }
+}
 
 let currentLink = null;
 
