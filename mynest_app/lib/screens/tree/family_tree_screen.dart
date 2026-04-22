@@ -291,18 +291,26 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                         offset: const Offset(0, 4),
                       ),
                     ],
+                    image: m.photoUrl != null && m.photoUrl!.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(m.photoUrl!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
                   child: Center(
-                    child: m.isDeceased
+                    child: m.isDeceased && (m.photoUrl == null || m.photoUrl!.isEmpty)
                         ? const Icon(Icons.spa_rounded, color: Colors.white70, size: 22)
-                        : Text(
-                            m.fullName[0].toUpperCase(),
-                            style: TextStyle(
-                              fontSize: isSelf ? 24 : 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
+                        : (m.photoUrl == null || m.photoUrl!.isEmpty)
+                            ? Text(
+                                m.fullName[0].toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: isSelf ? 24 : 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : null, // Don't show text/icon if image exists
                   ),
                 ),
                 const SizedBox(height: 6),

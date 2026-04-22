@@ -514,7 +514,7 @@ class _MockAudioRecorderState extends State<_MockAudioRecorder> {
                   ),
                   const SizedBox(width: 16),
                   Container(
-                    decoration: const BoxDecoration(shape: BoxShape.circle, gradient: NestTheme.buttonGradient),
+                    decoration: const BoxDecoration(shape: BoxShape.circle, gradient: NestTheme.amberGradient),
                     child: IconButton(
                       icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
                       iconSize: 32,

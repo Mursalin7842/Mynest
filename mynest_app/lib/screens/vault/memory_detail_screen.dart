@@ -181,7 +181,7 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                           Container(
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: NestTheme.buttonGradient,
+                              gradient: NestTheme.amberGradient,
                             ),
                             child: IconButton(
                               icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white),
