@@ -3,86 +3,193 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MyNest Family Story</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  <title>MyNest — Share a Family Memory</title>
+  <meta name="description" content="Help preserve precious family memories. Share photos, stories, and voice recordings for your family's digital legacy.">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
   <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
 </head>
 <body>
 
-  <div id="loader" class="loader-container">
-    <div class="spinner"></div>
-    <p>Loading the story...</p>
+  <!-- ═══ LOADING STATE ═══ -->
+  <div id="loader" class="loader-overlay">
+    <div class="loader-inner">
+      <div class="nest-logo-loader">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" stroke="#D4A574" stroke-width="2.5" opacity="0.3"/>
+          <circle cx="24" cy="24" r="22" stroke="#D4A574" stroke-width="2.5" stroke-dasharray="138" stroke-dashoffset="138" class="loader-ring"/>
+        </svg>
+        <span class="loader-icon">🏠</span>
+      </div>
+      <p class="loader-text">Opening the family vault…</p>
+    </div>
   </div>
 
-  <div id="error-state" class="error-state hidden">
-    <h2>Link Not Found</h2>
-    <p>This memory link might be expired or invalid.</p>
+  <!-- ═══ ERROR STATE ═══ -->
+  <div id="error-state" class="error-overlay hidden">
+    <div class="error-card">
+      <div class="error-icon">🔗</div>
+      <h2>Link Not Found</h2>
+      <p>This memory link may have expired or is invalid.<br>Please ask your family member for a new link.</p>
+    </div>
   </div>
 
-  <div id="main-content" class="main-content hidden">
-    <header>
-      <h1>MyNest</h1>
-      <p>Help preserve this family memory</p>
-    </header>
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <div id="main-content" class="page-wrapper hidden">
 
-    <!-- Photo Context Section -->
-    <section id="photo-context-section" class="photo-section hidden">
-      <div class="photo-container">
-        <img id="shared-photo" src="" alt="Family Memory">
-      </div>
-      <div class="question-container">
-        <h3 id="author-question"></h3>
-      </div>
-    </section>
+    <!-- Ambient Background -->
+    <div class="ambient-bg">
+      <div class="ambient-orb orb-1"></div>
+      <div class="ambient-orb orb-2"></div>
+      <div class="ambient-orb orb-3"></div>
+    </div>
 
-    <!-- Submission Form -->
-    <section class="form-section">
-      <div class="card">
-        <h2>Add Your Memory</h2>
-        <p>Your story will be sent for approval and added to the family book.</p>
-        
-        <form id="memory-form">
-          <div class="form-group">
-            <label for="contributorName">Your Name</label>
-            <input type="text" id="contributorName" required placeholder="e.g. Uncle John">
-          </div>
-          
-          <div class="form-group">
-            <label for="contributorRelation">Relation to Family</label>
-            <input type="text" id="contributorRelation" required placeholder="e.g. Grandfather, Cousin">
-          </div>
-          
-          <div class="form-group">
-            <label for="title">Give this memory a title</label>
-            <input type="text" id="title" required placeholder="e.g. The Summer of '85">
-          </div>
-          
-          <div class="form-group">
-            <label for="story">Write your story or Record Audio</label>
-            
-            <div class="audio-recorder" id="audioRecorder">
-              <button type="button" id="recordBtn" class="record-btn">
-                <span class="record-icon">🎤</span>
-                <span id="recordText">Start Recording</span>
-              </button>
-              <div id="audioPlaybackContainer" class="audio-playback hidden">
-                <audio id="audioPlayback" controls></audio>
-                <button type="button" id="deleteAudioBtn" class="delete-audio-btn">🗑️</button>
-              </div>
-            </div>
-
-            <textarea id="story" rows="6" placeholder="I remember when... (optional if you recorded audio)"></textarea>
-          </div>
-
-          <button type="submit" id="submit-btn">Submit to Family Vault</button>
-        </form>
-
-        <div id="success-msg" class="success-msg hidden">
-          ✅ Thank you! Your memory has been sent to the family vault for approval.
+    <!-- Header -->
+    <header class="site-header">
+      <div class="logo-mark">
+        <div class="logo-circle">🏠</div>
+        <div>
+          <h1 class="logo-text">MyNest</h1>
+          <p class="logo-subtitle">Family Memory Vault</p>
         </div>
       </div>
+      <p class="header-invite" id="header-invite">You've been invited to share a memory</p>
+    </header>
+
+    <!-- Photo Context Banner -->
+    <section id="photo-context-section" class="photo-banner hidden">
+      <div class="photo-frame">
+        <img id="shared-photo" src="" alt="Family Memory">
+        <div class="photo-overlay">
+          <span class="photo-badge">📸 Photo Context</span>
+        </div>
+      </div>
+      <div class="photo-question">
+        <p id="author-question">Do you know the story behind this photo?</p>
+      </div>
     </section>
+
+    <!-- ═══ FORM CARD ═══ -->
+    <main class="form-card" id="form-card">
+      <div class="card-header">
+        <h2>Share Your Memory</h2>
+        <p>Every detail matters. Your story will be reviewed and added to the family book.</p>
+      </div>
+
+      <form id="memory-form" class="memory-form">
+
+        <!-- Step 1: Identity -->
+        <div class="form-section-label">
+          <span class="section-number">1</span>
+          <span>About You</span>
+        </div>
+
+        <div class="input-row">
+          <div class="form-group">
+            <label for="contributorName">Your Name</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" id="contributorName" required placeholder="e.g. Uncle John">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="contributorRelation">Relation to Family</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🤝</span>
+              <input type="text" id="contributorRelation" required placeholder="e.g. Grandfather">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Memory Title -->
+        <div class="form-section-label">
+          <span class="section-number">2</span>
+          <span>The Memory</span>
+        </div>
+
+        <div class="form-group">
+          <label for="title">Give this memory a title</label>
+          <div class="input-wrapper">
+            <span class="input-icon">✨</span>
+            <input type="text" id="title" required placeholder="e.g. The Summer of '85">
+          </div>
+        </div>
+
+        <!-- Step 3: Photos -->
+        <div class="form-section-label">
+          <span class="section-number">3</span>
+          <span>Add Photos <small>(optional)</small></span>
+        </div>
+
+        <div class="photo-upload-area" id="photoUploadArea">
+          <div class="upload-dropzone" id="uploadDropzone">
+            <div class="dropzone-icon">📷</div>
+            <p class="dropzone-text">Drag photos here or <span class="browse-link">browse</span></p>
+            <p class="dropzone-hint">Upload multiple images — each can have its own story</p>
+            <input type="file" id="photoInput" accept="image/*" multiple hidden>
+          </div>
+
+          <!-- Uploaded Photos Grid -->
+          <div id="photoGrid" class="photo-grid hidden"></div>
+        </div>
+
+        <!-- Step 4: Story -->
+        <div class="form-section-label">
+          <span class="section-number">4</span>
+          <span>Tell the Story</span>
+        </div>
+
+        <div class="story-options">
+          <!-- Audio Recorder -->
+          <div class="audio-section">
+            <button type="button" id="recordBtn" class="record-btn">
+              <span class="mic-icon">🎤</span>
+              <span id="recordText">Record Your Voice</span>
+              <span id="recordTimer" class="record-timer hidden">0:00</span>
+            </button>
+            <div id="audioPlaybackContainer" class="audio-playback hidden">
+              <audio id="audioPlayback" controls></audio>
+              <button type="button" id="deleteAudioBtn" class="icon-btn delete-btn" title="Delete recording">🗑️</button>
+            </div>
+          </div>
+
+          <!-- Text Story -->
+          <div class="story-divider"><span>or write it down</span></div>
+          <div class="form-group">
+            <textarea id="story" rows="5" placeholder="I remember when we used to gather at grandma's house every summer..."></textarea>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submit-btn" class="submit-btn">
+          <span class="btn-text">Submit to Family Vault</span>
+          <span class="btn-icon">→</span>
+        </button>
+
+        <p class="privacy-note">🔒 Your submission is private and sent only to the family vault admin for review.</p>
+      </form>
+    </main>
+
+    <!-- ═══ SUCCESS STATE ═══ -->
+    <div id="success-state" class="success-card hidden">
+      <div class="success-animation">
+        <div class="success-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="36" fill="none" stroke="#7A8B6F" stroke-width="3" opacity="0.2"/>
+            <circle cx="40" cy="40" r="36" fill="none" stroke="#7A8B6F" stroke-width="3" stroke-dasharray="226" class="success-ring"/>
+            <path d="M25 40 L35 50 L55 30" fill="none" stroke="#7A8B6F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="success-check"/>
+          </svg>
+        </div>
+      </div>
+      <h2>Memory Received!</h2>
+      <p>Thank you for sharing. Your memory has been securely sent to the family vault and is awaiting approval.</p>
+      <button class="submit-btn" onclick="location.reload()">Share Another Memory</button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p>Built with ❤️ by <strong>MyNest</strong> — Preserving legacies, one memory at a time.</p>
+    </footer>
   </div>
 
   <script src="/app.js"></script>
