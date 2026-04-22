@@ -13,6 +13,7 @@ import '../book/family_book_screen.dart';
 import '../vault/vault_screen.dart';
 import '../tree/family_tree_screen.dart';
 import '../vault/memory_detail_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// ─────────────────────────────────────────────
 /// Dashboard V1.2.0 — 3 Link Types + Real Data
@@ -467,11 +468,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vault imported successfully! 📚'), backgroundColor: NestTheme.sage),
-              );
+            onPressed: () async {
+              final link = ctrl.text.trim();
+              if (link.contains('shared-')) {
+                final id = link.split('shared-').last;
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('imported_vault_id', id);
+                
+                if (mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vault imported successfully! 📚'), backgroundColor: NestTheme.sage),
+                  );
+                  _loadData(); // Reload to show imported memories
+                }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Invalid Vault Link.'), backgroundColor: NestTheme.dustyRose),
+                );
+              }
             },
             child: const Text('Import'),
           ),

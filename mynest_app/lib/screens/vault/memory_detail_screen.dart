@@ -326,6 +326,29 @@ class _MemoryDetailScreenState extends State<MemoryDetailScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           await DatabaseService().approveMemory(_memory.id);
+                          
+                          // Auto-generate family member if contributor details exist
+                          if (_memory.contributorName != null && _memory.contributorName!.isNotEmpty) {
+                            try {
+                              final members = await DatabaseService().getFamilyMembers(_memory.userId);
+                              final exists = members.any((m) => 
+                                m.fullName.toLowerCase() == _memory.contributorName!.toLowerCase());
+                              
+                              if (!exists) {
+                                await DatabaseService().addFamilyMember(FamilyMember(
+                                  id: '',
+                                  userId: _memory.userId,
+                                  fullName: _memory.contributorName!,
+                                  relation: _memory.contributorRelation ?? 'Family',
+                                  photoUrl: _memory.contributorPhotoUrl,
+                                  isApproved: true,
+                                ));
+                              }
+                            } catch (e) {
+                              // Ignore if it fails, memory is still approved
+                            }
+                          }
+                          
                           setState(() => _memory = _memory.copyWith(isApproved: true));
                         },
                         icon: const Icon(Icons.check_circle_rounded),

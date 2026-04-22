@@ -2,6 +2,7 @@ import 'package:appwrite/appwrite.dart';
 import '../config/appwrite_config.dart';
 import '../models/models.dart';
 import 'auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// ─────────────────────────────────────────────
 /// Database Service V1.2.0 — Full CRUD + Links
@@ -59,12 +60,42 @@ class DatabaseService {
   // ═══════════════════════════════════════════
 
   Future<List<FamilyMember>> getFamilyMembers(String userId) async {
-    final res = await _db.listDocuments(
+    final prefs = await SharedPreferences.getInstance();
+    final importedId = prefs.getString('imported_vault_id');
+
+    final res1 = await _db.listDocuments(
       databaseId: AppwriteConfig.databaseId,
       collectionId: AppwriteConfig.familyMembersCollection,
-      queries: [Query.equal('userId', userId), Query.limit(100)],
+      queries: [
+        Query.equal('userId', userId),
+        Query.limit(100),
+      ],
     );
-    return res.documents.map((d) => FamilyMember.fromMap(d.data)).toList();
+    
+    var members = res1.documents.map((d) => FamilyMember.fromMap(d.data)).toList();
+
+    if (importedId != null && importedId.isNotEmpty) {
+      try {
+        final res2 = await _db.listDocuments(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.familyMembersCollection,
+          queries: [
+            Query.equal('userId', importedId),
+            Query.equal('isApproved', true),
+            Query.limit(100),
+          ],
+        );
+        // Only add members not already in the tree to prevent duplicates
+        for (var d in res2.documents) {
+          final m = FamilyMember.fromMap(d.data);
+          if (!members.any((existing) => existing.fullName == m.fullName)) {
+            members.add(m);
+          }
+        }
+      } catch (_) {}
+    }
+    
+    return members;
   }
 
   Future<List<FamilyMember>> getPendingMembers(String userId) async {
@@ -115,7 +146,10 @@ class DatabaseService {
   // ═══════════════════════════════════════════
 
   Future<List<Memory>> getMemories(String userId) async {
-    final res = await _db.listDocuments(
+    final prefs = await SharedPreferences.getInstance();
+    final importedId = prefs.getString('imported_vault_id');
+
+    final res1 = await _db.listDocuments(
       databaseId: AppwriteConfig.databaseId,
       collectionId: AppwriteConfig.memoriesCollection,
       queries: [
@@ -124,7 +158,27 @@ class DatabaseService {
         Query.orderDesc('\$createdAt'),
       ],
     );
-    return res.documents.map((d) => Memory.fromMap(d.data)).toList();
+    
+    var memories = res1.documents.map((d) => Memory.fromMap(d.data)).toList();
+
+    if (importedId != null && importedId.isNotEmpty) {
+      try {
+        final res2 = await _db.listDocuments(
+          databaseId: AppwriteConfig.databaseId,
+          collectionId: AppwriteConfig.memoriesCollection,
+          queries: [
+            Query.equal('userId', importedId),
+            Query.equal('visibility', 'public'), // Only import public memories
+            Query.limit(100),
+            Query.orderDesc('\$createdAt'),
+          ],
+        );
+        memories.addAll(res2.documents.map((d) => Memory.fromMap(d.data)).toList());
+        memories.sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
+      } catch (_) {}
+    }
+
+    return memories;
   }
 
   Future<List<Memory>> getPublicMemories(String userId) async {
