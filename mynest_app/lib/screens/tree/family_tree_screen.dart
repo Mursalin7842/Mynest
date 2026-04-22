@@ -42,8 +42,40 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
       final user = AuthService().currentUser;
       if (user != null) {
         final all = await DatabaseService().getFamilyMembers(user.$id);
-        _members = all.where((m) => m.isApproved).toList();
-        _pendingMembers = all.where((m) => !m.isApproved).toList();
+        final memories = await DatabaseService().getMemories(user.$id);
+        
+        bool needsRefresh = false;
+        for (var mem in memories) {
+          if (mem.contributorName != null && mem.contributorName!.isNotEmpty) {
+            final exists = all.any((m) => m.fullName.toLowerCase() == mem.contributorName!.toLowerCase());
+            if (!exists) {
+              await DatabaseService().addFamilyMember(FamilyMember(
+                id: '',
+                userId: user.$id,
+                fullName: mem.contributorName!,
+                relation: mem.contributorRelation ?? 'Unknown',
+                photoUrl: mem.contributorPhotoUrl,
+                isApproved: true,
+              ));
+              needsRefresh = true;
+            } else if (mem.contributorPhotoUrl != null && mem.contributorPhotoUrl!.isNotEmpty) {
+               final existing = all.firstWhere((m) => m.fullName.toLowerCase() == mem.contributorName!.toLowerCase());
+               if (existing.photoUrl == null || existing.photoUrl!.isEmpty) {
+                 await DatabaseService().updateFamilyMember(existing.id, {'photoUrl': mem.contributorPhotoUrl});
+                 needsRefresh = true;
+               }
+            }
+          }
+        }
+        
+        if (needsRefresh) {
+          final refreshed = await DatabaseService().getFamilyMembers(user.$id);
+          _members = refreshed.where((m) => m.isApproved).toList();
+          _pendingMembers = refreshed.where((m) => !m.isApproved).toList();
+        } else {
+          _members = all.where((m) => m.isApproved).toList();
+          _pendingMembers = all.where((m) => !m.isApproved).toList();
+        }
       } else {
         _loadDemoTree();
       }
@@ -256,6 +288,8 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         final i = entry.key;
         final m = entry.value;
         final isSelf = m.id == selfId;
+        final isUnknown = m.relation == null || m.relation!.isEmpty || m.relation!.toLowerCase() == 'unknown';
+        final nodeColor = isUnknown ? Colors.red.shade400 : accentColor;
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -274,19 +308,21 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
                     gradient: isSelf
                         ? NestTheme.amberGradient
                         : LinearGradient(
-                            colors: [accentColor.withOpacity(0.8), accentColor],
+                            colors: [nodeColor.withOpacity(0.8), nodeColor],
                           ),
                     border: Border.all(
                       color: m.isDeceased
                           ? NestTheme.mist
-                          : isSelf
-                              ? NestTheme.softGold
-                              : Colors.white,
-                      width: isSelf ? 3 : 2,
+                          : isUnknown
+                              ? Colors.red
+                              : isSelf
+                                  ? NestTheme.softGold
+                                  : Colors.white,
+                      width: isSelf || isUnknown ? 3 : 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (isSelf ? NestTheme.amber : accentColor).withOpacity(0.3),
+                        color: (isSelf ? NestTheme.amber : nodeColor).withOpacity(0.3),
                         blurRadius: isSelf ? 16 : 8,
                         offset: const Offset(0, 4),
                       ),
