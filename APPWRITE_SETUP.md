@@ -51,6 +51,9 @@
 | taggedPersonName | String (255) | No |
 | contributorName | String (255) | No |
 | contributorRelation | String (255) | No |
+| contributorEmail | String (255) | No |
+| contributorPhone | String (50) | No |
+| contributorPhotoUrl | String (500) | No |
 | eventDate | String (100) | No |
 | location | String (255) | No |
 | isApproved | Boolean | No (default: true) |
