@@ -1157,6 +1157,47 @@ textarea::placeholder {
   background: #ffe3e3;
 }
 
+.send-otp-btn {
+  background: var(--amber);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 8px;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.send-otp-btn:hover {
+  background: var(--deep-amber);
+}
+
+.send-otp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.input-hint {
+  font-size: 0.8rem;
+  color: var(--sage);
+  margin-top: 6px;
+  display: block;
+}
+
+.email-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.email-wrapper input {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ═══ RESPONSIVE ═══ */
 @media (max-width: 600px) {
   .form-card {

@@ -118,11 +118,25 @@ otpDigits.forEach((input, idx) => {
     });
 });
 
-// Send OTP on blur of email field
+const sendOtpBtn = document.getElementById('sendOtpBtn');
+const sendOtpError = document.getElementById('sendOtpError');
+const sendOtpHint = document.getElementById('sendOtpHint');
+
+// Send OTP on button click
 let otpSentForEmail = '';
-emailInput.addEventListener('blur', async () => {
+sendOtpBtn.addEventListener('click', async () => {
     const email = emailInput.value.trim();
-    if (!email || !email.includes('@') || email === otpSentForEmail || isEmailVerified) return;
+    if (!email || !email.includes('@')) {
+        sendOtpError.textContent = 'Please enter a valid email address first.';
+        sendOtpError.classList.remove('hidden');
+        return;
+    }
+    if (isEmailVerified) return;
+    
+    sendOtpBtn.disabled = true;
+    sendOtpBtn.textContent = 'Sending...';
+    sendOtpError.classList.add('hidden');
+    
     await sendOtp(email);
 });
 
@@ -138,13 +152,19 @@ async function sendOtp(email) {
         verifyEmailDisplay.textContent = email;
         verificationSection.classList.remove('hidden');
         verifyError.classList.add('hidden');
+        
+        sendOtpBtn.textContent = 'Code Sent';
+        sendOtpHint.textContent = 'Please check your email and enter the code below.';
+        sendOtpHint.style.color = 'var(--sage)';
+        
         otpDigits.forEach(d => d.value = '');
         otpDigits[0].focus();
     } catch (e) {
         console.error('OTP send error:', e);
-        verifyError.textContent = 'Failed to send code. Please check your email.';
-        verifyError.classList.remove('hidden');
-        verificationSection.classList.remove('hidden');
+        sendOtpError.textContent = 'Failed to send code. Please try again.';
+        sendOtpError.classList.remove('hidden');
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.textContent = 'Send Code';
     }
 }
 
