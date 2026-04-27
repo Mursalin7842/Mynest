@@ -65,17 +65,6 @@ class _DiscoverUsersScreenState extends State<DiscoverUsersScreen> {
     } catch (e) {
       debugPrint('Discover users error: $e');
     }
-
-    // If no real users found, add demo users so the screen isn't empty
-    if (_allUsers.isEmpty) {
-      _allUsers = [
-        UserProfile(id: 'demo1', userId: 'demo_u1', fullName: 'Sarah Miller', email: 'sarah@example.com'),
-        UserProfile(id: 'demo2', userId: 'demo_u2', fullName: 'Julian Miller', email: 'julian@example.com'),
-        UserProfile(id: 'demo3', userId: 'demo_u3', fullName: 'Eleanor Vance', email: 'eleanor@example.com'),
-        UserProfile(id: 'demo4', userId: 'demo_u4', fullName: 'Lily Miller', email: 'lily@example.com'),
-        UserProfile(id: 'demo5', userId: 'demo_u5', fullName: 'James Miller', email: 'james@example.com'),
-      ];
-    }
     _filtered = List.from(_allUsers);
     if (mounted) setState(() => _isLoading = false);
   }
