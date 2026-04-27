@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 /// ─────────────────────────────────────────────
 /// Family Tree Screen V1.2.0
@@ -209,11 +208,13 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         
         // Strip markdown if Gemini includes it
         text = text.trim();
-        if (text.startsWith('```json')) text = text.substring(7);
-        else if (text.startsWith('```')) text = text.substring(3);
+        if (text.startsWith('```json')) {
+          text = text.substring(7);
+        } else if (text.startsWith('```')) text = text.substring(3);
         if (text.endsWith('```')) text = text.substring(0, text.length - 3);
         
-        final parsed = jsonDecode(text.trim());
+        final rawGeminiOutput = text.trim();
+        final parsed = jsonDecode(rawGeminiOutput);
         
         setState(() {
           _grandparents = _members.where((m) => (parsed['grandparents'] as List?)?.contains(m.fullName) ?? false).toList();
@@ -225,9 +226,52 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
           _isLoading = false;
         });
 
+        // Show Gemini's reasoning in a dedicated dialog
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Tree successfully organized by Gemini 1.5 Flash ✨'), backgroundColor: NestTheme.sage),
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(children: [
+                Icon(Icons.auto_awesome, color: NestTheme.deepAmber),
+                const SizedBox(width: 10),
+                const Text('Gemini AI Analysis'),
+              ]),
+              content: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Model: gemini-3.1-flash-lite-preview',
+                        style: TextStyle(fontSize: 11, color: NestTheme.mist)),
+                    const SizedBox(height: 8),
+                    Text('Input: ${_members.length} family members analyzed',
+                        style: TextStyle(fontSize: 12, color: NestTheme.charcoal)),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        const JsonEncoder.withIndent('  ').convert(parsed),
+                        style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text('✅ Tree organized successfully!',
+                        style: TextStyle(fontSize: 12, color: NestTheme.sage, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
           );
         }
         return;

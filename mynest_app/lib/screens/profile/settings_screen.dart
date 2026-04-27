@@ -111,9 +111,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (ok == true && nameCtrl.text.trim().isNotEmpty) {
       try { await AuthService().updateName(nameCtrl.text.trim()); } catch (_) {}
       setState(() => _name = nameCtrl.text.trim());
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Name updated!'), backgroundColor: NestTheme.sage),
       );
+      }
     }
     nameCtrl.dispose();
   }
@@ -132,8 +134,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ));
     if (ok == true) {
       try { await AuthService().logout(); } catch (_) {}
-      if (mounted) Navigator.pushAndRemoveUntil(context,
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(context,
           MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
+      }
     }
   }
 

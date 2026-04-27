@@ -1,9 +1,7 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config/theme.dart';
-import '../../config/appwrite_config.dart';
 import '../../models/models.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';

@@ -2,6 +2,7 @@
 /// MyNest V1.2.0 — Data Models
 /// Matched to actual Appwrite collection schema
 /// ─────────────────────────────────────────────
+library;
 
 class FamilyMember {
   final String id;

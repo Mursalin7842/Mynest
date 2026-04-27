@@ -3,7 +3,6 @@ import '../../config/theme.dart';
 import '../home/dashboard_screen.dart';
 import '../vault/vault_screen.dart';
 import '../tree/family_tree_screen.dart';
-import '../book/family_book_screen.dart';
 import '../profile/settings_screen.dart';
 
 /// ─────────────────────────────────────────────

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../../config/theme.dart';
 import '../../config/appwrite_config.dart';
 import '../../models/models.dart';
@@ -416,60 +420,149 @@ class _GeminiAudioPlayer extends StatefulWidget {
 }
 
 class _GeminiAudioPlayerState extends State<_GeminiAudioPlayer> {
-  String _narration = '';
+  String _status = 'Generating audio with Gemini AI...';
   bool _isLoading = true;
+  bool _isPlaying = false;
+  bool _hasError = false;
+  final AudioPlayer _player = AudioPlayer();
+  String? _wavPath;
 
   @override
   void initState() {
     super.initState();
-    _fetchNarration();
+    _player.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() => _isPlaying = state == PlayerState.playing);
+        if (state == PlayerState.completed) {
+          setState(() => _status = 'Narration complete');
+        }
+      }
+    });
+    _generateAndPlay();
   }
 
-  Future<void> _fetchNarration() async {
+  @override
+  void dispose() {
+    _player.dispose();
+    // Clean up temp file
+    if (_wavPath != null) {
+      try { File(_wavPath!).deleteSync(); } catch (_) {}
+    }
+    super.dispose();
+  }
+
+  /// Build a WAV file header for raw PCM data (16-bit mono 24kHz)
+  Uint8List _buildWav(Uint8List pcmData) {
+    const sampleRate = 24000;
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    final byteRate = sampleRate * numChannels * (bitsPerSample ~/ 8);
+    final blockAlign = numChannels * (bitsPerSample ~/ 8);
+    final dataSize = pcmData.length;
+    final fileSize = 36 + dataSize;
+
+    final header = ByteData(44);
+    // RIFF header
+    header.setUint8(0, 0x52); // R
+    header.setUint8(1, 0x49); // I
+    header.setUint8(2, 0x46); // F
+    header.setUint8(3, 0x46); // F
+    header.setUint32(4, fileSize, Endian.little);
+    header.setUint8(8, 0x57);  // W
+    header.setUint8(9, 0x41);  // A
+    header.setUint8(10, 0x56); // V
+    header.setUint8(11, 0x45); // E
+    // fmt sub-chunk
+    header.setUint8(12, 0x66); // f
+    header.setUint8(13, 0x6D); // m
+    header.setUint8(14, 0x74); // t
+    header.setUint8(15, 0x20); // (space)
+    header.setUint32(16, 16, Endian.little); // sub-chunk size
+    header.setUint16(20, 1, Endian.little);  // PCM format
+    header.setUint16(22, numChannels, Endian.little);
+    header.setUint32(24, sampleRate, Endian.little);
+    header.setUint32(28, byteRate, Endian.little);
+    header.setUint16(32, blockAlign, Endian.little);
+    header.setUint16(34, bitsPerSample, Endian.little);
+    // data sub-chunk
+    header.setUint8(36, 0x64); // d
+    header.setUint8(37, 0x61); // a
+    header.setUint8(38, 0x74); // t
+    header.setUint8(39, 0x61); // a
+    header.setUint32(40, dataSize, Endian.little);
+
+    // Combine header + PCM data
+    final wav = Uint8List(44 + dataSize);
+    wav.setRange(0, 44, header.buffer.asUint8List());
+    wav.setRange(44, 44 + dataSize, pcmData);
+    return wav;
+  }
+
+  /// Call Gemini TTS API, convert PCM response to WAV, and play it
+  Future<void> _generateAndPlay() async {
     try {
       final apiKey = AppwriteConfig.geminiApiKey;
       final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=$apiKey');
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-tts-preview:generateContent?key=$apiKey');
 
-      final prompt = '''
-      You are the MyNest Family Storyteller. Act as a warm, nostalgic voice. 
-      Read the following memory out loud (generate the spoken script). 
-      Make it sound beautiful, cinematic, and emotional. Keep it short (3-4 sentences max).
-      Memory Title: ${widget.memory.title}
-      Memory Story: ${widget.memory.story}
-      ''';
+      // Build the narration prompt from the story content
+      final storyText = widget.memory.story ?? widget.memory.title;
+      final prompt = 'Read this family story with warm emotion and nostalgia: $storyText';
+
+      setState(() => _status = 'Sending story to Gemini AI...');
 
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'contents': [
-            {
-              'parts': [
-                {'text': prompt}
-              ]
+          'contents': [{'parts': [{'text': prompt}]}],
+          'generationConfig': {
+            'responseModalities': ['AUDIO'],
+            'speechConfig': {
+              'voiceConfig': {
+                'prebuiltVoiceConfig': {'voiceName': 'Kore'}
+              }
             }
-          ]
+          }
         }),
       );
 
       if (response.statusCode == 200) {
+        setState(() => _status = 'Processing Gemini audio...');
         final data = jsonDecode(response.body);
-        final text = data['candidates'][0]['content']['parts'][0]['text'];
+        final b64Audio = data['candidates'][0]['content']['parts'][0]['inlineData']['data'] as String;
+
+        // Decode base64 PCM data and wrap in WAV container
+        final pcmBytes = base64Decode(b64Audio);
+        final wavBytes = _buildWav(pcmBytes);
+
+        // Write WAV to temp file for playback
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/gemini_narration_${DateTime.now().millisecondsSinceEpoch}.wav');
+        await file.writeAsBytes(wavBytes);
+        _wavPath = file.path;
+
         setState(() {
-          _narration = text;
           _isLoading = false;
+          _status = 'Playing Gemini narration...';
         });
+
+        // Start playback automatically
+        await _player.play(DeviceFileSource(file.path));
       } else {
+        final errBody = jsonDecode(response.body);
+        final msg = errBody['error']?['message'] ?? 'Unknown error';
         setState(() {
-          _narration = 'Audio playback failed. Please check Gemini API key.';
           _isLoading = false;
+          _hasError = true;
+          _status = 'Gemini error: $msg';
         });
       }
     } catch (e) {
       setState(() {
-        _narration = 'Connection error. Could not connect to Gemini.';
         _isLoading = false;
+        _hasError = true;
+        _status = 'Connection error: ${e.toString().substring(0, 80)}';
       });
     }
   }
@@ -478,52 +571,139 @@ class _GeminiAudioPlayerState extends State<_GeminiAudioPlayer> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
-      height: 300,
+      height: 320,
       child: Column(
         children: [
+          // Header row
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: NestTheme.deepAmber.withAlpha(26),
+                  color: _hasError
+                      ? Colors.red.withAlpha(26)
+                      : NestTheme.deepAmber.withAlpha(26),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.graphic_eq_rounded, color: NestTheme.deepAmber),
+                child: Icon(
+                  _hasError ? Icons.error_rounded : Icons.graphic_eq_rounded,
+                  color: _hasError ? Colors.red : NestTheme.deepAmber,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Gemini Storyteller', style: Theme.of(context).textTheme.titleMedium),
-                    const Text('Playing audio narration...', style: TextStyle(color: NestTheme.mist, fontSize: 12)),
+                    Text('Gemini AI Voice', style: Theme.of(context).textTheme.titleMedium),
+                    Text(_status,
+                        style: const TextStyle(color: NestTheme.mist, fontSize: 12),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.close_rounded),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  _player.stop();
+                  Navigator.pop(context);
+                },
               ),
             ],
           ),
           const SizedBox(height: 24),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: NestTheme.deepAmber))
-                : SingleChildScrollView(
-                    child: Text(
-                      '"$_narration"',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontStyle: FontStyle.italic,
-                        color: NestTheme.charcoal,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ).animate().fadeIn(duration: 800.ms),
+
+          // Waveform animation or loading indicator
+          if (_isLoading)
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: NestTheme.deepAmber),
+                  const SizedBox(height: 16),
+                  Text(_status, style: TextStyle(color: NestTheme.mist, fontSize: 13)),
+                ],
+              ),
+            )
+          else ...[
+            // Animated waveform bars when playing
+            SizedBox(
+              height: 60,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(20, (i) => AnimatedContainer(
+                  duration: Duration(milliseconds: 300 + (i * 50)),
+                  width: 4,
+                  height: _isPlaying ? (15.0 + (i % 5) * 8.0) : 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: NestTheme.deepAmber.withAlpha(_isPlaying ? 200 : 80),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-          ),
+                )),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Story title being narrated
+            Text(
+              '♪ "${widget.memory.title}"',
+              style: const TextStyle(
+                fontSize: 15,
+                fontStyle: FontStyle.italic,
+                color: NestTheme.charcoal,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (widget.memory.contributorName != null)
+              Text(
+                'by ${widget.memory.contributorName}',
+                style: TextStyle(fontSize: 12, color: NestTheme.mist),
+              ),
+            const Spacer(),
+
+            // Playback controls
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.replay_rounded),
+                  color: NestTheme.deepAmber,
+                  iconSize: 32,
+                  onPressed: _wavPath != null ? () async {
+                    await _player.stop();
+                    await _player.play(DeviceFileSource(_wavPath!));
+                  } : null,
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: NestTheme.amberGradient,
+                  ),
+                  child: IconButton(
+                    icon: Icon(_isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                    color: Colors.white,
+                    iconSize: 40,
+                    onPressed: () async {
+                      if (_isPlaying) {
+                        await _player.pause();
+                      } else if (_wavPath != null) {
+                        await _player.resume();
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(Icons.stop_rounded),
+                  color: NestTheme.deepAmber,
+                  iconSize: 32,
+                  onPressed: () async => await _player.stop(),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

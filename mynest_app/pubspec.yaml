@@ -47,6 +47,8 @@ dependencies:
   record: ^6.2.0
   path_provider: ^2.1.5
 
+  http: any
+  flutter_tts: ^4.2.5
 dev_dependencies:
   flutter_test:
     sdk: flutter

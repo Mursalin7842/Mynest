@@ -72,9 +72,9 @@ class _SplashGateState extends State<SplashGate> {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) =>
+          pageBuilder: (_, _, _) =>
               isLoggedIn ? const HomeShell() : const LoginScreen(),
-          transitionsBuilder: (_, anim, __, child) =>
+          transitionsBuilder: (_, anim, _, child) =>
               FadeTransition(opacity: anim, child: child),
           transitionDuration: const Duration(milliseconds: 600),
         ),
@@ -126,7 +126,7 @@ class _SplashGateState extends State<SplashGate> {
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 600),
                 curve: Curves.easeOut,
-                builder: (_, val, __) => Opacity(
+                builder: (_, val, _) => Opacity(
                   opacity: val,
                   child: Text(
                     'MyNest',
@@ -142,7 +142,7 @@ class _SplashGateState extends State<SplashGate> {
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 600),
                 curve: Curves.easeOut,
-                builder: (_, val, __) => Opacity(
+                builder: (_, val, _) => Opacity(
                   opacity: val,
                   child: Text(
                     'Before your memory fades away.',

@@ -105,7 +105,6 @@ class NestTheme {
       scaffoldBackgroundColor: cream,
       canvasColor: cream,
       cardColor: Colors.white,
-      dialogBackgroundColor: Colors.white,
       // Disable Material3 surface tint that causes dark overlay
       applyElevationOverlayColor: false,
       textTheme: GoogleFonts.interTextTheme().copyWith(
