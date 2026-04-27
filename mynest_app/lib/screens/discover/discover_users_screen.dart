@@ -40,23 +40,28 @@ class _DiscoverUsersScreenState extends State<DiscoverUsersScreen> {
     _searchCtrl.dispose();
     super.dispose();
   }
+  String? _errorMsg;
 
   /// Fetch all user profiles and the current user's existing family members
   Future<void> _load() async {
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _errorMsg = null; });
     try {
       final user = AuthService().currentUser;
       if (user != null) {
-        // Load all users from the users collection via DatabaseService
+        // Load all users from the users collection
         final db = Databases(AuthService().client);
         final res = await db.listDocuments(
           databaseId: AppwriteConfig.databaseId,
           collectionId: AppwriteConfig.usersCollection,
           queries: [Query.limit(100)],
         );
+        debugPrint('Discover: found ${res.documents.length} user docs');
         _allUsers = res.documents
-            .map((d) => UserProfile.fromMap(d.data))
-            .where((u) => u.userId != user.$id) // Exclude self
+            .map((d) {
+              try { return UserProfile.fromMap(d.data); } catch (_) { return null; }
+            })
+            .where((u) => u != null && u.userId != user.$id)
+            .cast<UserProfile>()
             .toList();
 
         // Load existing family members to check duplicates
@@ -64,6 +69,7 @@ class _DiscoverUsersScreenState extends State<DiscoverUsersScreen> {
       }
     } catch (e) {
       debugPrint('Discover users error: $e');
+      _errorMsg = e.toString();
     }
     _filtered = List.from(_allUsers);
     if (mounted) setState(() => _isLoading = false);
@@ -173,11 +179,25 @@ class _DiscoverUsersScreenState extends State<DiscoverUsersScreen> {
                           children: [
                             Icon(Icons.person_search_rounded, size: 64, color: NestTheme.mist),
                             const SizedBox(height: 16),
-                            Text('No users found',
+                            Text(_errorMsg != null ? 'Error loading users' : 'No users found',
                                 style: Theme.of(context).textTheme.headlineMedium),
                             const SizedBox(height: 8),
-                            Text('Try a different search term',
-                                style: Theme.of(context).textTheme.bodyMedium),
+                            if (_errorMsg != null)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 32),
+                                child: Text(_errorMsg!, style: TextStyle(color: Colors.red, fontSize: 12),
+                                    textAlign: TextAlign.center, maxLines: 4, overflow: TextOverflow.ellipsis),
+                              )
+                            else
+                              Text('No other users have signed up yet',
+                                  style: Theme.of(context).textTheme.bodyMedium),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: _load,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(backgroundColor: NestTheme.deepAmber, foregroundColor: Colors.white),
+                            ),
                           ],
                         ),
                       )

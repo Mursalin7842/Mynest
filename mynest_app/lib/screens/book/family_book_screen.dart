@@ -188,6 +188,13 @@ class _FamilyBookScreenState extends State<FamilyBookScreen> {
   /// Send the FULL merged story to Gemini TTS and play the audio
   Future<void> _playFullStory() async {
     if (_generatedStory.isEmpty) return;
+
+    // If we already have a cached WAV file, just replay it — no API call needed
+    if (_wavPath != null && File(_wavPath!).existsSync()) {
+      await _player.play(DeviceFileSource(_wavPath!));
+      return;
+    }
+
     setState(() => _isGeneratingAudio = true);
 
     try {
