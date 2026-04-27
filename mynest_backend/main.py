@@ -24,7 +24,7 @@ from appwrite.query import Query
 # ── Config ──
 DATABASE_ID = os.environ.get('APPWRITE_DATABASE_ID', 'YOUR_DATABASE_ID')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
-GEMINI_MODEL = 'gemini-3.1-flash-live-preview'
+GEMINI_MODEL = 'gemini-3.1-flash-lite-preview'
 
 
 def main(context):

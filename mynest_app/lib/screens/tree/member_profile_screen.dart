@@ -41,7 +41,14 @@ class _MemberProfileScreenState extends State<MemberProfileScreen>
       final user = AuthService().currentUser;
       if (user != null) {
         final all = await DatabaseService().getMemories(user.$id);
-        _memories = all.where((m) => m.taggedPersonId == _member.id).toList();
+        // Match memories by contributor name, tagged person name, or tagged person ID
+        final name = _member.fullName.toLowerCase();
+        _memories = all.where((m) {
+          if (m.taggedPersonId != null && m.taggedPersonId == _member.id) return true;
+          if (m.taggedPersonName != null && m.taggedPersonName!.toLowerCase() == name) return true;
+          if (m.contributorName != null && m.contributorName!.toLowerCase() == name) return true;
+          return false;
+        }).toList();
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
@@ -94,9 +101,14 @@ class _MemberProfileScreenState extends State<MemberProfileScreen>
                     const SizedBox(height: 40),
                     CircleAvatar(radius: 40,
                       backgroundColor: _member.isDeceased ? NestTheme.mist.withOpacity(0.3) : NestTheme.amber.withOpacity(0.3),
-                      child: Text(_member.fullName[0].toUpperCase(),
-                          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold,
-                              color: _member.isDeceased ? NestTheme.mist : Colors.white)),
+                      backgroundImage: (_member.photoUrl != null && _member.photoUrl!.isNotEmpty)
+                          ? NetworkImage(_member.photoUrl!)
+                          : null,
+                      child: (_member.photoUrl == null || _member.photoUrl!.isEmpty)
+                          ? Text(_member.fullName[0].toUpperCase(),
+                              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold,
+                                  color: _member.isDeceased ? NestTheme.mist : Colors.white))
+                          : null,
                     ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.8, 0.8)),
                     const SizedBox(height: 14),
                     Text(_member.fullName,
@@ -134,6 +146,26 @@ class _MemberProfileScreenState extends State<MemberProfileScreen>
                 _ActionBtn(icon: Icons.delete_outline_rounded, label: 'Delete', color: NestTheme.dustyRose,
                     onTap: _deletePerson),
               ]).animate().fadeIn(delay: 200.ms),
+              const SizedBox(height: 16),
+
+              // ── Details Card ──
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: NestTheme.cardRadius,
+                    boxShadow: NestTheme.softShadow),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Details', style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 12),
+                    _detailRow(Icons.person_rounded, 'Relation', _member.relation ?? 'Not set'),
+                    if (_member.gender != null) _detailRow(Icons.wc_rounded, 'Gender', _member.gender!),
+                    if (_member.dateOfBirth != null) _detailRow(Icons.cake_rounded, 'Date of Birth', _member.dateOfBirth!),
+                    if (_member.notes != null && _member.notes!.isNotEmpty) _detailRow(Icons.notes_rounded, 'Notes', _member.notes!),
+                    _detailRow(Icons.check_circle_rounded, 'Status', _member.isDeceased ? 'Deceased' : 'Living'),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 250.ms),
               const SizedBox(height: 16),
 
               // Toggles
@@ -201,6 +233,20 @@ class _MemberProfileScreenState extends State<MemberProfileScreen>
               ),
             ])),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: NestTheme.deepAmber),
+          const SizedBox(width: 10),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          Expanded(child: Text(value, style: TextStyle(color: NestTheme.charcoal, fontSize: 13))),
         ],
       ),
     );

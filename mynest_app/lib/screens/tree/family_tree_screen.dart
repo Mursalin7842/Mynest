@@ -1,5 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
+/// ─────────────────────────────────────────────
+/// Family Tree Screen V1.2.0
+/// 
+/// This screen is responsible for visualizing the family hierarchy.
+/// It fetches family members from the Appwrite database and organizes 
+/// them into generational layers. It includes a background synchronization 
+/// mechanism that maps new contributors from memories directly into the tree.
+/// ─────────────────────────────────────────────
 import 'package:flutter_animate/flutter_animate.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../config/appwrite_config.dart';
 import '../../config/theme.dart';
 import '../../models/models.dart';
 import '../../services/auth_service.dart';
@@ -31,12 +44,15 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   List<FamilyMember> _children = [];
   List<FamilyMember> _others = [];
 
+  /// Initializes the screen and triggers the initial background data load.
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  /// Asynchronously fetches family members from the database, parses their relations,
+  /// and automatically synchronizes the user's master profile to the "Self" node.
   Future<void> _load() async {
     setState(() => _isLoading = true);
     try {
@@ -158,6 +174,77 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
     }
   }
 
+  /// ── Explicit Gemini Integration for Demonstration ──
+  Future<void> _organizeTreeWithGemini() async {
+    setState(() => _isLoading = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Gemini is analyzing family relations... ✨'), duration: Duration(seconds: 2)),
+    );
+
+    try {
+      final apiKey = AppwriteConfig.geminiApiKey;
+      final url = Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=$apiKey');
+
+      final memberListJson = _members.map((m) => {'name': m.fullName, 'relation': m.relation ?? 'Unknown'}).toList();
+      final membersStr = jsonEncode(memberListJson);
+      
+      final prompt = 'You are an intelligent family tree organizer. I will provide a list of family members with their self-reported relationship to me.\n'
+          'Members: $membersStr\n\n'
+          'Determine the generation of each member and return ONLY a raw JSON object (no markdown, no backticks) structured exactly like this:\n'
+          '{"grandparents": ["name1"], "parents": ["name2"], "self": ["name3"], "siblings": ["name4"], "children": ["name5"], "extended": ["name6"]}\n'
+          'Place each members exact full name into the correct array.';
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [{'parts': [{'text': prompt}]}],
+          'generationConfig': {'temperature': 0.1}
+        })
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String text = data['candidates'][0]['content']['parts'][0]['text'];
+        
+        // Strip markdown if Gemini includes it
+        text = text.trim();
+        if (text.startsWith('```json')) text = text.substring(7);
+        else if (text.startsWith('```')) text = text.substring(3);
+        if (text.endsWith('```')) text = text.substring(0, text.length - 3);
+        
+        final parsed = jsonDecode(text.trim());
+        
+        setState(() {
+          _grandparents = _members.where((m) => (parsed['grandparents'] as List?)?.contains(m.fullName) ?? false).toList();
+          _parents = _members.where((m) => (parsed['parents'] as List?)?.contains(m.fullName) ?? false).toList();
+          _self = _members.where((m) => (parsed['self'] as List?)?.contains(m.fullName) ?? false).toList();
+          _siblings = _members.where((m) => (parsed['siblings'] as List?)?.contains(m.fullName) ?? false).toList();
+          _children = _members.where((m) => (parsed['children'] as List?)?.contains(m.fullName) ?? false).toList();
+          _others = _members.where((m) => (parsed['extended'] as List?)?.contains(m.fullName) ?? false).toList();
+          _isLoading = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Tree successfully organized by Gemini 1.5 Flash ✨'), backgroundColor: NestTheme.sage),
+          );
+        }
+        return;
+      } else {
+        throw Exception('Gemini API Error');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gemini API failed. Falling back to local logic.'), backgroundColor: Colors.red),
+        );
+      }
+      _organizeTree();
+    }
+    setState(() => _isLoading = false);
+  }
+
   void _demoApprove(FamilyMember m) {
     setState(() {
       _pendingMembers.removeWhere((p) => p.id == m.id);
@@ -185,6 +272,11 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
         title: const Text('Family Tree'),
         backgroundColor: NestTheme.cream,
         actions: [
+          IconButton(
+            tooltip: 'Organize with Gemini ✨',
+            icon: const Icon(Icons.auto_awesome_rounded, color: NestTheme.deepAmber),
+            onPressed: _organizeTreeWithGemini,
+          ),
           IconButton(
             icon: const Icon(Icons.person_add_rounded),
             onPressed: () => Navigator.push(context,

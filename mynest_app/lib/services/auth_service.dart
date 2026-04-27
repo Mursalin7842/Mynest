@@ -26,15 +26,37 @@ class AuthService {
 
   Client get client => _client;
 
-  /// Check if user has an active session
+  /// Check if user has an active session.
+  /// Retries on transient network errors to prevent accidental logouts.
   Future<bool> checkSession() async {
-    try {
-      _currentUser = await _account.get();
-      return true;
-    } catch (_) {
-      _currentUser = null;
-      return false;
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        _currentUser = await _account.get();
+        return true;
+      } on AppwriteException catch (e) {
+        // 401 = genuinely not authenticated, stop retrying
+        if (e.code == 401) {
+          _currentUser = null;
+          return false;
+        }
+        // Other Appwrite errors (rate limit, server error) — retry
+        if (attempt < 2) {
+          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+          continue;
+        }
+        // If we still have a cached user after all retries, keep it
+        return _currentUser != null;
+      } catch (_) {
+        // Network timeout or other transient error — retry
+        if (attempt < 2) {
+          await Future.delayed(Duration(milliseconds: 500 * (attempt + 1)));
+          continue;
+        }
+        // After all retries, keep the existing session if we had one
+        return _currentUser != null;
+      }
     }
+    return _currentUser != null;
   }
 
   /// Custom 2FA: Create account and send OTP

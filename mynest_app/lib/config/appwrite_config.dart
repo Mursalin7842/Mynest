@@ -21,7 +21,7 @@ class AppwriteConfig {
 
   // ── Gemini AI ──
   static const String geminiApiKey = 'INSERT_YOUR_API_KEY_HERE'; // ← Paste here
-  static const String geminiModel = 'gemini-3.1-flash-live-preview';
+  static const String geminiModel = 'gemini-3.1-flash-lite-preview';
 
   // ── Backend Function ──
   static const String backendFunctionId = 'mynest_backend';

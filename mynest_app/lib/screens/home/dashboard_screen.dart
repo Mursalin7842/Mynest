@@ -13,6 +13,7 @@ import '../book/family_book_screen.dart';
 import '../vault/vault_screen.dart';
 import '../tree/family_tree_screen.dart';
 import '../vault/memory_detail_screen.dart';
+import '../discover/discover_users_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ─────────────────────────────────────────────
@@ -253,6 +254,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           ],
                         ).animate().fadeIn(delay: 400.ms),
+                        const SizedBox(height: 12),
+
+                        // ── Find Family Widget ──
+                        GestureDetector(
+                          onTap: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const DiscoverUsersScreen())),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                NestTheme.deepAmber.withAlpha(26),
+                                NestTheme.sage.withAlpha(26),
+                              ]),
+                              borderRadius: NestTheme.cardRadius,
+                              border: Border.all(color: NestTheme.deepAmber.withAlpha(51)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: NestTheme.deepAmber.withAlpha(38),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.person_search_rounded, color: NestTheme.deepAmber, size: 24),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Find Family Members',
+                                          style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                                                fontWeight: FontWeight.w700, color: NestTheme.darkBrown)),
+                                      Text('Search registered users and add them to your tree',
+                                          style: Theme.of(context).textTheme.bodySmall),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right_rounded, color: NestTheme.deepAmber),
+                              ],
+                            ),
+                          ),
+                        ).animate().fadeIn(delay: 450.ms),
                         const SizedBox(height: 28),
 
                         // ── Recent Activity ──

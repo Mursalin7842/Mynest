@@ -429,7 +429,7 @@ class _GeminiAudioPlayerState extends State<_GeminiAudioPlayer> {
     try {
       final apiKey = AppwriteConfig.geminiApiKey;
       final url = Uri.parse(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey');
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=$apiKey');
 
       final prompt = '''
       You are the MyNest Family Storyteller. Act as a warm, nostalgic voice. 
